@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:traffic_web_admin/check_receipt.dart';
 import 'package:traffic_web_admin/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -22,11 +21,11 @@ class _LoginScreenState extends State<LoginScreen> {
       content: Text(
         "Please wait",
         style: TextStyle(
-          fontSize: 36,
+          fontSize: 16,
         ),
       ),
-      backgroundColor: Colors.pinkAccent,
-      duration: Duration(seconds: 5),
+      backgroundColor: Colors.blueGrey,
+      duration: Duration(seconds: 2),
     );
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
 
@@ -70,10 +69,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 content: Text(
                   "No record found. You are not admin",
                   style: TextStyle(
-                    fontSize: 36,
+                    fontSize: 16,
                   ),
                 ),
-                backgroundColor: Colors.pinkAccent,
+                backgroundColor: Colors.yellowAccent,
                 duration: Duration(seconds: 5),
               );
               ScaffoldMessenger.of(context).showSnackBar(snackBar);
