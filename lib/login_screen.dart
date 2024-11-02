@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:traffic_web_admin/check_receipt.dart';
 import 'package:traffic_web_admin/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -110,7 +111,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: const TextStyle(fontSize: 16, color: Colors.white),
 
                   ),
-                  
+
                   //button login
                   ElevatedButton(
                       onPressed: ()
