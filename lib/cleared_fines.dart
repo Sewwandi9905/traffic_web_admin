@@ -81,7 +81,7 @@ class _ClearedFinesScreenState extends State<ClearedFinesScreen> {
             padding: const EdgeInsets.all(12.0),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.grey,
+                color: Colors.blueGrey,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: TextField(

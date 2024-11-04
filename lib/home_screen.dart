@@ -33,6 +33,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> gotFineData = [];
   List<Map<String, dynamic>> filteredData = [];
+  List<String> clearHistory = [];  // To store the last 3 cleared fine document IDs
   bool isLoading = false;
   final TextEditingController searchController = TextEditingController();
 
@@ -73,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
       filteredData = query.isEmpty
           ? gotFineData
           : gotFineData.where((item) {
-        return (item['dlNo'] ?? '').toLowerCase().contains(query.toLowerCase()); // Search by dlNo
+        return (item['dlNo'] ?? '').toLowerCase().contains(query.toLowerCase());
       }).toList();
     });
   }
@@ -94,10 +95,40 @@ class _HomeScreenState extends State<HomeScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Fine cleared successfully.'),
       ));
+
+      // Add to the clear history, keeping only the last 3 entries
+      setState(() {
+        clearHistory.insert(0, documentId);
+        if (clearHistory.length > 3) {
+          clearHistory.removeLast();
+        }
+      });
+
       fetchGotFineData();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text("Error clearing fine: $e"),
+      ));
+    }
+  }
+
+  Future<void> undoClear() async {
+    if (clearHistory.isNotEmpty) {
+      String documentId = clearHistory.removeAt(0);
+      try {
+        await FirebaseFirestore.instance.collection('GotFine').doc(documentId).update({'cleared': false});
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Last clear action undone.'),
+        ));
+        fetchGotFineData();
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("Error undoing clear action: $e"),
+        ));
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('No actions to undo.'),
       ));
     }
   }
@@ -115,9 +146,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Outstanding Fines", style: TextStyle(color: Colors.white)), // Set title color to white
+        title: const Text("Outstanding Fines", style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.blueGrey[900],
         actions: [
+          IconButton(
+            icon: const Icon(Icons.undo, color: Colors.white),
+            onPressed: undoClear,
+          ),
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
             onPressed: fetchGotFineData,
@@ -132,13 +167,13 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.all(12.0),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.grey, // Set background to grey
+                color: Colors.grey,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: TextField(
                 controller: searchController,
                 decoration: const InputDecoration(
-                  labelText: 'Search by DL No', // Updated label for search
+                  labelText: 'Search by DL No',
                   labelStyle: TextStyle(color: Colors.white),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.all(12),
@@ -182,7 +217,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text("Vehicle No: ${item['vehicleNo'] ?? 'N/A'}", style: const TextStyle(color: Colors.white54)),
-                        Text("DL No: ${item['dlNo'] ?? 'N/A'}", style: const TextStyle(color: Colors.white54)), // Show DL No
+                        Text("DL No: ${item['dlNo'] ?? 'N/A'}", style: const TextStyle(color: Colors.white54)),
                         Text("Status: $status", style: const TextStyle(color: Colors.lightBlueAccent)),
                       ],
                     ),
@@ -235,7 +270,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: const Text(
               "View Cleared Fines",
               style: TextStyle(
-                color: Colors.black,
+                color: Colors.white,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
