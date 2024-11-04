@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'cleared_fines.dart'; // Import the new screen
+import 'cleared_fines.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,6 +16,7 @@ class MyApp extends StatelessWidget {
       title: 'Police Management System',
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        scaffoldBackgroundColor: Colors.black,
       ),
       home: const HomeScreen(),
     );
@@ -31,36 +32,35 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> gotFineData = [];
-  List<Map<String, dynamic>> filteredData = []; // For displaying filtered results
-  bool isLoading = false; // Loading state
-  final TextEditingController searchController = TextEditingController(); // Search controller
+  List<Map<String, dynamic>> filteredData = [];
+  bool isLoading = false;
+  final TextEditingController searchController = TextEditingController();
 
   Future<void> fetchGotFineData() async {
     setState(() {
-      isLoading = true; // Start loading
+      isLoading = true;
     });
 
     try {
-      // Fetch only the documents where cleared is false
       QuerySnapshot snapshot = await FirebaseFirestore.instance
           .collection('GotFine')
-          .where('cleared', isEqualTo: false) // Filtering by cleared field
+          .where('cleared', isEqualTo: false)
           .get();
 
       List<Map<String, dynamic>> data = snapshot.docs.map((doc) {
         var docData = doc.data() as Map<String, dynamic>;
-        docData['id'] = doc.id; // Include document ID for updates
+        docData['id'] = doc.id;
         return docData;
       }).toList();
 
       setState(() {
         gotFineData = data;
-        filteredData = data; // Initialize filtered data
-        isLoading = false; // Stop loading
+        filteredData = data;
+        isLoading = false;
       });
     } catch (e) {
       setState(() {
-        isLoading = false; // Stop loading
+        isLoading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text("Error fetching data: $e"),
@@ -69,27 +69,19 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void filterData(String query) {
-    if (query.isEmpty) {
-      // If the search query is empty, show all data
-      setState(() {
-        filteredData = gotFineData;
-      });
-    } else {
-      // Filter the data based on the search query
-      setState(() {
-        filteredData = gotFineData.where((item) {
-          return (item['fullName'] ?? '').toLowerCase().contains(query.toLowerCase());
-        }).toList();
-      });
-    }
+    setState(() {
+      filteredData = query.isEmpty
+          ? gotFineData
+          : gotFineData.where((item) {
+        return (item['dlNo'] ?? '').toLowerCase().contains(query.toLowerCase()); // Search by dlNo
+      }).toList();
+    });
   }
 
   void openPDF(String url) async {
-    // Check if the URL can be launched
     if (await canLaunch(url)) {
-      await launch(url); // Launch the PDF URL
+      await launch(url);
     } else {
-      // If URL cannot be launched, show an error message
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Could not launch $url'),
       ));
@@ -98,12 +90,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> clearFine(String documentId) async {
     try {
-      await FirebaseFirestore.instance.collection('GotFine').doc(documentId).update({'cleared': true}); // Update cleared to true
-      // Show a confirmation message
+      await FirebaseFirestore.instance.collection('GotFine').doc(documentId).update({'cleared': true});
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Fine cleared successfully.'),
       ));
-      fetchGotFineData(); // Refresh the data after clearing
+      fetchGotFineData();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text("Error clearing fine: $e"),
@@ -114,9 +105,9 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    fetchGotFineData(); // Fetch data on init
+    fetchGotFineData();
     searchController.addListener(() {
-      filterData(searchController.text); // Filter data on search input change
+      filterData(searchController.text);
     });
   }
 
@@ -124,92 +115,131 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Outstanding Fines"),
-        leading: IconButton(
-          icon: const Icon(Icons.refresh),
-          onPressed: () {
-            fetchGotFineData();
-          },
-        ),
+        title: const Text("Outstanding Fines", style: TextStyle(color: Colors.white)), // Set title color to white
+        backgroundColor: Colors.blueGrey[900],
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: fetchGotFineData,
+          ),
+        ],
       ),
-      body: Center(
-        child: isLoading
-            ? CircularProgressIndicator() // Show loading indicator
-            : Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator(color: Colors.lightBlueAccent))
+          : Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.grey, // Set background to grey
+                borderRadius: BorderRadius.circular(10),
+              ),
               child: TextField(
                 controller: searchController,
-                decoration: InputDecoration(
-                  labelText: 'Search by Name',
-                  border: OutlineInputBorder(),
+                decoration: const InputDecoration(
+                  labelText: 'Search by DL No', // Updated label for search
+                  labelStyle: TextStyle(color: Colors.white),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.all(12),
                 ),
+                style: const TextStyle(color: Colors.white),
               ),
             ),
-            Expanded(
-              child: filteredData.isEmpty
-                  ? ElevatedButton(
-                onPressed: () {
-                  fetchGotFineData(); // Load data
-                },
+          ),
+          Expanded(
+            child: filteredData.isEmpty
+                ? Center(
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueGrey,
+                ),
+                onPressed: fetchGotFineData,
                 child: const Text("Press to Load GotFine Data"),
-              )
-                  : ListView.builder(
-                itemCount: filteredData.length,
-                itemBuilder: (context, index) {
-                  var item = filteredData[index];
-                  String status = item.containsKey('pdfUrl')
-                      ? (item['pdfUrl'].isNotEmpty ? "Paid" : "Not Paid")
-                      : "Not Shown";
+              ),
+            )
+                : ListView.builder(
+              itemCount: filteredData.length,
+              itemBuilder: (context, index) {
+                var item = filteredData[index];
+                String status = item.containsKey('pdfUrl') && item['pdfUrl'].isNotEmpty
+                    ? "Paid"
+                    : "Not Paid";
 
-                  return ListTile(
-                    title: Text(item['fullName'] ?? 'No Name'),
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Colors.blueGrey, Colors.black],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: ListTile(
+                    title: Text(item['fullName'] ?? 'No Name', style: const TextStyle(color: Colors.white)),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("Vehicle No: ${item['vehicleNo'] ?? 'N/A'}"),
-                        Text("Status: $status"),
+                        Text("Vehicle No: ${item['vehicleNo'] ?? 'N/A'}", style: const TextStyle(color: Colors.white54)),
+                        Text("DL No: ${item['dlNo'] ?? 'N/A'}", style: const TextStyle(color: Colors.white54)), // Show DL No
+                        Text("Status: $status", style: const TextStyle(color: Colors.lightBlueAccent)),
                       ],
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        item.containsKey('pdfUrl') && item['pdfUrl'].isNotEmpty
-                            ? ElevatedButton(
-                          onPressed: () {
-                            openPDF(item['pdfUrl']); // Open PDF link
-                          },
-                          child: const Text("View"),
-                        )
-                            : Container(),
+                        if (item.containsKey('pdfUrl') && item['pdfUrl'].isNotEmpty)
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blueGrey,
+                            ),
+                            onPressed: () {
+                              openPDF(item['pdfUrl']);
+                            },
+                            child: const Text("View", style: TextStyle(color: Colors.white)),
+                          ),
                         const SizedBox(width: 8),
                         ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blueGrey[700],
+                          ),
                           onPressed: () {
-                            clearFine(item['id']); // Clear the fine
+                            clearFine(item['id']);
                           },
-                          child: const Text("Clear"),
+                          child: const Text("Clear", style: TextStyle(color: Colors.white)),
                         ),
                       ],
                     ),
-                  );
-                },
-              ),
+                  ),
+                );
+              },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
       bottomNavigationBar: BottomAppBar(
         child: Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.all(10.0),
           child: ElevatedButton(
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const ClearedFinesScreen()), // Navigate to cleared fines screen
+                MaterialPageRoute(builder: (context) => const ClearedFinesScreen()),
               );
             },
-            child: const Text("View Cleared Fines"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blueGrey,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+            ),
+            child: const Text(
+              "View Cleared Fines",
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ),
       ),
